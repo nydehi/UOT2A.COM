@@ -14,7 +14,8 @@ namespace Server.Misc
 	{
 		None,
 		Crypt,
-		NewCrypt
+		NewCrypt,
+		SHA256
 	}
 
 	public class AccountHandler
@@ -24,7 +25,7 @@ namespace Server.Misc
 	    private static bool RestrictDeletion = !TestCenter.Enabled;
 		private static TimeSpan DeleteDelay = TimeSpan.FromDays( 7.0 );
 
-		public static PasswordProtection ProtectPasswords = PasswordProtection.NewCrypt;
+		public static PasswordProtection ProtectPasswords = PasswordProtection.SHA256;
 
 		private static AccessLevel m_LockdownLevel;
 
