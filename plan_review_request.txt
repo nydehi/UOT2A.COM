@@ -1,0 +1,76 @@
+The objective is to implement "Make item decay an option configurable directly on the spawner."
+
+Currently in `Server/Item.cs`:
+```csharp
+		[CommandProperty( AccessLevel.GameMaster )]
+		public virtual bool Decays
+		{
+			get
+			{
+				// TODO: Make item decay an option on the spawner
+				return (Movable && Visible/* && Spawner == null*/);
+			}
+		}
+```
+
+This implies that if an item was spawned by a Spawner, it should optionally be able to decay or not decay based on a property on the Spawner. If it's not spawned by a Spawner, it just uses its default `Decays` property logic.
+
+Changes required:
+1.  **Add `ItemDecays` property to `Server.ISpawner` interface (Server/Interfaces.cs)**
+    We need to add a `bool ItemDecays { get; }` property so that `Item.cs` can read it regardless of the specific spawner type. But wait, `Item.cs` has a reference to `ISpawner`. Let's see if we should add `ItemDecays` to `ISpawner` or specifically check for `Server.Mobiles.Spawner` in `Item.cs`.
+    Given the interface `ISpawner`, it's better to add the property there. Wait, there might be other classes implementing `ISpawner`. Let's see: `Scripts/Regions/Spawning/SpawnEntry.cs` and `Scripts/Engines/Spawner/Spawner.cs` are the two implementors. Adding `ItemDecays` to `ISpawner` might be too much, or maybe it's necessary. Let's look at how `Spawner.cs` is used. Or maybe just add `bool ItemDecays { get; }` to `ISpawner` interface with a default behavior in other implementations. Actually, `ISpawner` only has 3 properties currently. Let's add `bool ItemDecays { get; }` to `ISpawner`.
+
+2.  **Update `Server/Interfaces.cs`**:
+    ```csharp
+	public interface ISpawner
+	{
+		bool UnlinkOnTaming { get; }
+		Point3D HomeLocation { get; }
+		int HomeRange { get; }
+        bool ItemDecays { get; }
+
+		void Remove(ISpawnable spawn);
+	}
+    ```
+
+3.  **Update `Scripts/Engines/Spawner/Spawner.cs`**:
+    Add property `ItemDecays`.
+    ```csharp
+		private bool m_ItemDecays;
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool ItemDecays
+		{
+			get { return m_ItemDecays; }
+			set { m_ItemDecays = value; InvalidateProperties(); }
+		}
+    ```
+    And modify its constructors to initialize it to `true` (or `false`?). The current `Item.cs` comment says `/* && Spawner == null*/` which implies items from spawners previously didn't decay. Let's make the default `m_ItemDecays` wait... maybe `false` or `true`. Currently `Item.cs` returns `(Movable && Visible)`. It doesn't check `Spawner == null`. Wait, it says `// TODO: Make item decay an option on the spawner` and has `/* && Spawner == null*/` commented out. This means currently spawned items DO decay if they are Movable and Visible. Let's look at `Item.cs` again:
+    ```csharp
+		[CommandProperty( AccessLevel.GameMaster )]
+		public virtual bool Decays
+		{
+			get
+			{
+				if ( Spawner != null )
+					return Spawner.ItemDecays;
+
+				return (Movable && Visible);
+			}
+		}
+    ```
+    If `Spawner != null`, we return `Spawner.ItemDecays`. Or should it be `(Movable && Visible && (Spawner == null || Spawner.ItemDecays))`? Or maybe if `Spawner.ItemDecays` is false, it forces no decay, otherwise it decays based on `Movable && Visible`. Let's use `if ( Spawner != null ) { return (Movable && Visible && Spawner.ItemDecays); } return (Movable && Visible);` or simply `if ( Spawner != null ) return Spawner.ItemDecays;`.
+    Let's check `ItemDecays` default value. Currently without the check, spawned items use `Movable && Visible`. I should default `ItemDecays` in `Spawner.cs` to `true` to keep existing behavior, but maybe it should be `false`? It's usually expected that spawned static items shouldn't decay. Wait, the commented out part is `&& Spawner == null`. If it were enabled, items from spawners would NOT decay. So the intended behavior is probably that spawned items do NOT decay by default, or the new option lets the user choose.
+    Actually, let's add `bool ItemDecays { get; set; }` to `Spawner.cs`. We need to serialize/deserialize it too. Oh, I should also update `SpawnEntry.cs` to implement `bool ItemDecays { get { return true; } }` or similar so that things keep compiling.
+
+4.  **Update `Scripts/Regions/Spawning/SpawnEntry.cs`**:
+    Implement `bool ItemDecays { get { return true; } }`.
+
+5.  **Update `Server/Item.cs`**:
+    Change `Decays` property.
+
+6.  **Serialization in `Spawner.cs`**:
+    We need to bump the version from 6 to 7 in `Serialize` and `Deserialize` and save `m_ItemDecays`.
+    Wait, in `Deserialize` version 6 didn't have `m_ItemDecays`. I should set `m_ItemDecays = true;` or `false` for older versions. Maybe default to `true` to match current RunUO behavior (since `Spawner == null` was commented out).
+
+Let's double check `ISpawner` in `Server/Interfaces.cs`.

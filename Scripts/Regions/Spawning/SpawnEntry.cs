@@ -25,6 +25,8 @@ namespace Server.Regions
 		// Are unlinked and untamed creatures removed after 20 hours?
 		public bool RemoveIfUntamed{ get{ return true; } }
 
+		public bool ItemDecays{ get{ return true; } }
+
 
 		public static readonly Direction InvalidDirection = Direction.Running;
 

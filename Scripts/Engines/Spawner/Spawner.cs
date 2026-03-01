@@ -48,6 +48,7 @@ namespace Server.Mobiles
 		private Rectangle2D m_SpawnArea;
 		private bool m_IgnoreHousing;
 		private bool m_MobilesSeekHome;
+		private bool m_ItemDecays;
 
 		public bool IsFull{ get{ return ( m_Spawned.Count >= m_Count ); } }
 		public bool IsEmpty{ get{ return ( m_Spawned.Count == 0 ); } }
@@ -81,6 +82,7 @@ namespace Server.Mobiles
 
 			s.m_SpawnNames = new List<string>( m_SpawnNames );
 			s.m_Spawned = new List<ISpawnable>();
+			m_ItemDecays = true;
 		}
 
 		[CommandProperty( AccessLevel.GameMaster )]
@@ -107,6 +109,13 @@ namespace Server.Mobiles
 			{
 				m_MobilesSeekHome = value;
 			}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool ItemDecays
+		{
+			get { return m_ItemDecays; }
+			set { m_ItemDecays = value; InvalidateProperties(); }
 		}
 
 		[CommandProperty( AccessLevel.GameMaster )]
@@ -290,6 +299,7 @@ namespace Server.Mobiles
 			m_WalkingRange = -1;
 			m_SpawnNames = spawnNames;
 			m_Spawned = new List<ISpawnable>();
+			m_ItemDecays = true;
 			DoTimer( TimeSpan.FromSeconds( 1 ) );
 		}
 
@@ -893,7 +903,9 @@ namespace Server.Mobiles
 		{
 			base.Serialize( writer );
 
-			writer.Write( (int) 6 ); // version
+			writer.Write( (int) 7 ); // version
+
+			writer.Write( m_ItemDecays );
 
 			writer.Write( m_MobilesSeekHome );
 
@@ -949,6 +961,11 @@ namespace Server.Mobiles
 
 			switch ( version )
 			{
+				case 7:
+				{
+					m_ItemDecays = reader.ReadBool();
+					goto case 6;
+				}
 				case 6:
 				{
 					m_MobilesSeekHome = reader.ReadBool();
@@ -1038,6 +1055,9 @@ namespace Server.Mobiles
 					break;
 				}
 			}
+
+			if ( version < 7 )
+				m_ItemDecays = true;
 
 			if ( version < 3 && Weight == 0 )
 				Weight = -1;
