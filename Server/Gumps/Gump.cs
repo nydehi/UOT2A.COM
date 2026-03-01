@@ -66,8 +66,6 @@ namespace Server.Gumps
 
 		public void Invalidate()
 		{
-			//if ( m_Strings.Count > 0 )
-			//	m_Strings.Clear();
 		}
 
 		public int TypeID
