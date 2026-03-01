@@ -4292,8 +4292,8 @@ namespace Server.Mobiles
 					{
 						patient.SendLocalizedMessage( 1010059 ); // You have been cured of all poisons.
 
-						CheckSkill( SkillName.Healing, 0.0, 60.0 + poisonLevel * 10.0 ); // TODO: Verify formula
-						CheckSkill( SkillName.Anatomy, 0.0, 100.0 );
+						CheckSkill( SkillName.Healing, 0.0, 120.0 );
+						CheckSkill( SkillName.Anatomy, 0.0, 120.0 );
 					}
 				}
 			}
