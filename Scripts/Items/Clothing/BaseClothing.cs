@@ -625,12 +625,6 @@ namespace Server.Items
 
 		public virtual bool Scissor( Mobile from, Scissors scissors )
 		{
-			if ( !IsChildOf( from.Backpack ) )
-			{
-				from.SendLocalizedMessage( 502437 ); // Items you wish to cut must be in your backpack.
-				return false;
-			}
-
 			CraftSystem system = DefTailoring.CraftSystem;
 
 			CraftItem item = system.CraftItems.SearchFor( GetType() );
