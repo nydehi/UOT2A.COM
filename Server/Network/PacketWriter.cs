@@ -96,7 +96,7 @@ namespace Server.Network
 		/// <summary>
 		/// Internal format buffer.
 		/// </summary>
-		private static byte[] m_Buffer = new byte[4];
+		private static byte[] m_Buffer = new byte[8];
 
 		/// <summary>
 		/// Instantiates a new PacketWriter instance with the default capacity of 4 bytes.
@@ -186,6 +186,40 @@ namespace Server.Network
 
 			m_Stream.Write( m_Buffer, 0, 4 );
 		}
+		/// <summary>
+		/// Writes an 8-byte signed integer value to the underlying stream.
+		/// </summary>
+		public void Write( long value )
+		{
+			m_Buffer[0] = (byte)(value >> 56);
+			m_Buffer[1] = (byte)(value >> 48);
+			m_Buffer[2] = (byte)(value >> 40);
+			m_Buffer[3] = (byte)(value >> 32);
+			m_Buffer[4] = (byte)(value >> 24);
+			m_Buffer[5] = (byte)(value >> 16);
+			m_Buffer[6] = (byte)(value >>  8);
+			m_Buffer[7] = (byte) value;
+
+			m_Stream.Write( m_Buffer, 0, 8 );
+		}
+
+		/// <summary>
+		/// Writes an 8-byte unsigned integer value to the underlying stream.
+		/// </summary>
+		public void Write( ulong value )
+		{
+			m_Buffer[0] = (byte)(value >> 56);
+			m_Buffer[1] = (byte)(value >> 48);
+			m_Buffer[2] = (byte)(value >> 40);
+			m_Buffer[3] = (byte)(value >> 32);
+			m_Buffer[4] = (byte)(value >> 24);
+			m_Buffer[5] = (byte)(value >> 16);
+			m_Buffer[6] = (byte)(value >>  8);
+			m_Buffer[7] = (byte) value;
+
+			m_Stream.Write( m_Buffer, 0, 8 );
+		}
+
 
 		/// <summary>
 		/// Writes a sequence of bytes to the underlying stream
