@@ -76,13 +76,19 @@ namespace Server.Items
 
 		public static bool CanScissor( Mobile from, IScissorable obj )
 		{
-			if ( obj is Item && ( (Item)obj ).Nontransferable )
+			if ( obj is Item )
 			{
-				from.SendLocalizedMessage( 502440 ); // Scissors can not be used on that to produce anything.
-				return false;
-			}
+				Item item = (Item)obj;
 
-			// TODO: Move other general checks from the different implementations here
+				if ( item.Deleted || !from.CanSee( item ) )
+					return false;
+
+				if ( item.Nontransferable )
+				{
+					from.SendLocalizedMessage( 502440 ); // Scissors can not be used on that to produce anything.
+					return false;
+				}
+			}
 
 			return true;
 		}
