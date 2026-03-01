@@ -108,7 +108,7 @@ namespace Server.RemoteAdmin
 				m_Stream.WriteAsciiNull( pwToSend );
 				m_Stream.Write( (byte)a.AccessLevel );
 				m_Stream.Write( a.Banned );
-				unchecked { m_Stream.Write( (uint)a.LastLogin.Ticks ); } // TODO: This doesn't work, uint.MaxValue is only 7 minutes of ticks. Fix protocol.
+				m_Stream.Write( a.LastLogin.Ticks );
 				
 				m_Stream.Write( (ushort)a.LoginIPs.Length );
 				for (int i=0;i<a.LoginIPs.Length;i++)
