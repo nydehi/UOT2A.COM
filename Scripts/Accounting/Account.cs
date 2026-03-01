@@ -16,10 +16,10 @@ namespace Server.Accounting
 		public static readonly TimeSpan YoungDuration = TimeSpan.FromHours( 40.0 );
 
 		public static readonly TimeSpan InactiveDuration = TimeSpan.FromDays( 180.0 );
-		
+
 		public static readonly TimeSpan EmptyInactiveDuration = TimeSpan.FromDays( 30.0 );
 
-		private string m_Username, m_PlainPassword, m_CryptPassword, m_NewCryptPassword;
+		private string m_Username, m_PlainPassword, m_CryptPassword, m_NewCryptPassword, m_SHA256Password;
 		private AccessLevel m_AccessLevel;
 		private int m_Flags;
 		private DateTime m_Created, m_LastLogin;
@@ -140,6 +140,15 @@ namespace Server.Accounting
 		}
 
 		/// <summary>
+		/// Account username and password hashed with SHA256. May be null.
+		/// </summary>
+		public string SHA256Password
+		{
+			get { return m_SHA256Password; }
+			set { m_SHA256Password = value; }
+		}
+
+		/// <summary>
 		/// Initial AccessLevel for new characters created on this account.
 		/// </summary>
 		public AccessLevel AccessLevel
@@ -227,7 +236,7 @@ namespace Server.Accounting
 		/// </summary>
 		public bool Inactive
 		{
-			get 
+			get
 			{
 				if( this.AccessLevel != AccessLevel.Player )
 					return false;
@@ -397,6 +406,7 @@ namespace Server.Accounting
 
 		private static MD5CryptoServiceProvider m_MD5HashProvider;
 		private static SHA1CryptoServiceProvider m_SHA1HashProvider;
+		private static SHA256CryptoServiceProvider m_SHA256HashProvider;
 		private static byte[] m_HashBuffer;
 
 		public static string HashMD5( string phrase )
@@ -427,6 +437,21 @@ namespace Server.Accounting
 			return BitConverter.ToString( hashed );
 		}
 
+
+		public static string HashSHA256( string phrase )
+		{
+			if ( m_SHA256HashProvider == null )
+				m_SHA256HashProvider = new SHA256CryptoServiceProvider();
+
+			if ( m_HashBuffer == null )
+				m_HashBuffer = new byte[256];
+
+			int length = Encoding.ASCII.GetBytes( phrase, 0, phrase.Length > 256 ? 256 : phrase.Length, m_HashBuffer, 0 );
+			byte[] hashed = m_SHA256HashProvider.ComputeHash( m_HashBuffer, 0, length );
+
+			return BitConverter.ToString( hashed );
+		}
+
 		public void SetPassword( string plainPassword )
 		{
 			switch ( AccountHandler.ProtectPasswords )
@@ -436,6 +461,7 @@ namespace Server.Accounting
 						m_PlainPassword = plainPassword;
 						m_CryptPassword = null;
 						m_NewCryptPassword = null;
+						m_SHA256Password = null;
 
 						break;
 					}
@@ -444,14 +470,25 @@ namespace Server.Accounting
 						m_PlainPassword = null;
 						m_CryptPassword = HashMD5( plainPassword );
 						m_NewCryptPassword = null;
+						m_SHA256Password = null;
 
 						break;
 					}
-				default: // PasswordProtection.NewCrypt
+				case PasswordProtection.NewCrypt:
 					{
 						m_PlainPassword = null;
 						m_CryptPassword = null;
 						m_NewCryptPassword = HashSHA1( m_Username + plainPassword );
+						m_SHA256Password = null;
+
+						break;
+					}
+				default: // PasswordProtection.SHA256
+					{
+						m_PlainPassword = null;
+						m_CryptPassword = null;
+						m_NewCryptPassword = null;
+						m_SHA256Password = HashSHA256( m_Username + plainPassword );
 
 						break;
 					}
@@ -473,10 +510,15 @@ namespace Server.Accounting
 				ok = ( m_CryptPassword == HashMD5( plainPassword ) );
 				curProt = PasswordProtection.Crypt;
 			}
-			else
+			else if ( m_NewCryptPassword != null )
 			{
 				ok = ( m_NewCryptPassword == HashSHA1( m_Username + plainPassword ) );
 				curProt = PasswordProtection.NewCrypt;
+			}
+			else
+			{
+				ok = ( m_SHA256Password == HashSHA256( m_Username + plainPassword ) );
+				curProt = PasswordProtection.SHA256;
 			}
 
 			if ( ok && curProt != AccountHandler.ProtectPasswords )
@@ -599,7 +641,7 @@ namespace Server.Accounting
 		public Account( string username, string password )
 		{
 			m_Username = username;
-			
+
 			SetPassword( password );
 
 			m_AccessLevel = AccessLevel.Player;
@@ -622,6 +664,7 @@ namespace Server.Accounting
 			string plainPassword = Utility.GetText( node["password"], null );
 			string cryptPassword = Utility.GetText( node["cryptPassword"], null );
 			string newCryptPassword = Utility.GetText( node["newCryptPassword"], null );
+			string sha256Password = Utility.GetText( node["sha256Password"], null );
 
 			switch ( AccountHandler.ProtectPasswords )
 			{
@@ -629,6 +672,8 @@ namespace Server.Accounting
 					{
 						if ( plainPassword != null )
 							SetPassword( plainPassword );
+						else if ( sha256Password != null )
+							m_SHA256Password = sha256Password;
 						else if ( newCryptPassword != null )
 							m_NewCryptPassword = newCryptPassword;
 						else if ( cryptPassword != null )
@@ -644,6 +689,8 @@ namespace Server.Accounting
 							m_CryptPassword = cryptPassword;
 						else if ( plainPassword != null )
 							SetPassword( plainPassword );
+						else if ( sha256Password != null )
+							m_SHA256Password = sha256Password;
 						else if ( newCryptPassword != null )
 							m_NewCryptPassword = newCryptPassword;
 						else
@@ -651,12 +698,29 @@ namespace Server.Accounting
 
 						break;
 					}
-				default: // PasswordProtection.NewCrypt
+				case PasswordProtection.NewCrypt:
 					{
 						if ( newCryptPassword != null )
 							m_NewCryptPassword = newCryptPassword;
 						else if ( plainPassword != null )
 							SetPassword( plainPassword );
+						else if ( sha256Password != null )
+							m_SHA256Password = sha256Password;
+						else if ( cryptPassword != null )
+							m_CryptPassword = cryptPassword;
+						else
+							SetPassword( "empty" );
+
+						break;
+					}
+				default: // PasswordProtection.SHA256
+					{
+						if ( sha256Password != null )
+							m_SHA256Password = sha256Password;
+						else if ( plainPassword != null )
+							SetPassword( plainPassword );
+						else if ( newCryptPassword != null )
+							m_NewCryptPassword = newCryptPassword;
 						else if ( cryptPassword != null )
 							m_CryptPassword = cryptPassword;
 						else
@@ -665,7 +729,6 @@ namespace Server.Accounting
 						break;
 					}
 			}
-
 			Enum.TryParse( Utility.GetText( node["accessLevel"], "Player" ), true, out m_AccessLevel );
 
 			m_Flags = Utility.GetXMLInt32( Utility.GetText( node["flags"], "0" ), 0 );
@@ -1000,6 +1063,13 @@ namespace Server.Accounting
 			{
 				xml.WriteStartElement( "newCryptPassword" );
 				xml.WriteString( m_NewCryptPassword );
+				xml.WriteEndElement();
+			}
+
+			if ( m_SHA256Password != null )
+			{
+				xml.WriteStartElement( "sha256Password" );
+				xml.WriteString( m_SHA256Password );
 				xml.WriteEndElement();
 			}
 
