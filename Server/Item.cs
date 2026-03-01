@@ -1453,8 +1453,9 @@ namespace Server
 		{
 			get
 			{
-				// TODO: Make item decay an option on the spawner
-				return (Movable && Visible/* && Spawner == null*/);
+				if ( Spawner != null )
+					return (Movable && Visible && Spawner.ItemDecays);
+				return (Movable && Visible);
 			}
 		}
 
