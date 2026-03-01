@@ -41,7 +41,7 @@ namespace Server.PathAlgorithms.SlowAStar
 
 		public override bool CheckCondition( Mobile m, Map map, Point3D start, Point3D goal )
 		{
-			return false;
+			return true;
 		}
 
 		public override Direction[] Find( Mobile m, Map map, Point3D start, Point3D goal )
@@ -190,8 +190,9 @@ namespace Server.PathAlgorithms.SlowAStar
 				MoveImpl.IgnoreMovableImpassables = false;
 				MoveImpl.Goal = Point3D.Zero;
 
-				if ( sucCount == 0 || ++depth > MaxDepth )
+				if ( ++depth > MaxDepth )
 					break;
+
 
 				for ( int i = 0; i < sucCount; ++i )
 				{
