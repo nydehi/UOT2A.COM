@@ -1295,24 +1295,6 @@ namespace Server.Network
 		{
 			this.EnsureCapacity( 256 );
 
-			//int
-			//short
-			//short
-			//short
-			//byte
-			//byte
-			//short
-			//byte
-			//byte
-			//short
-			//short
-			//short
-			//while ( int != 0 )
-			//{
-			//short
-			//byte
-			//short
-			//}
 
 			m_Stream.Write( (int) beheld.Serial );
 			m_Stream.Write( (short) beheld.Body );
