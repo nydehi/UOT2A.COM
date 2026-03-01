@@ -76,16 +76,9 @@ namespace Server
 
 				byte[] indexBuffer = new byte[20];
 
-				//int indexWritten = _orderedIndexInfo.Count * indexBuffer.Length;
-				//int totalWritten = memLength + indexWritten
-
 				for (int i = 0; i < _orderedIndexInfo.Count; i++)
 				{
 					IndexInfo info = _orderedIndexInfo[i];
-
-					int typeCode = info.typeCode;
-					int serial = info.serial;
-					int length = info.size;
 
 
 					indexBuffer[0] = (byte)(info.typeCode);
