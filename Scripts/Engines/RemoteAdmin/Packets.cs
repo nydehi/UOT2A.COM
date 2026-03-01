@@ -24,7 +24,7 @@ namespace Server.RemoteAdmin
 			m_Stream.Write( CompData, 0, CDLen );
 		}
 	}
-	
+
 	public sealed class Login : Packet
 	{
 		public Login( LoginResponse resp ) : base( 0x02, 2 )
@@ -59,7 +59,7 @@ namespace Server.RemoteAdmin
 			string netVer = Environment.Version.ToString();
 			string os = Environment.OSVersion.ToString();
 
-			EnsureCapacity( 1 + 2 + (10*4) + netVer.Length+1 + os.Length+1 );
+			EnsureCapacity( 1 + 2 + (11*4) + netVer.Length+1 + os.Length+1 );
 			int banned = 0;
 			int active = 0;
 
@@ -82,7 +82,7 @@ namespace Server.RemoteAdmin
 			m_Stream.Write( (int) Core.ScriptItems );
 
 			m_Stream.Write( (uint)(DateTime.UtcNow - Clock.ServerStart).TotalSeconds );
-			m_Stream.Write( (uint) GC.GetTotalMemory( false ) );                        // TODO: uint not sufficient for TotalMemory (long). Fix protocol.
+			m_Stream.Write( (ulong) GC.GetTotalMemory( false ) );
 			m_Stream.WriteAsciiNull( netVer );
 			m_Stream.WriteAsciiNull( os );
 		}
@@ -95,7 +95,7 @@ namespace Server.RemoteAdmin
 			EnsureCapacity( 1 + 2 + 2 );
 
 			m_Stream.Write( (byte)results.Count );
-			
+
 			foreach ( Account a in results )
 			{
 				m_Stream.WriteAsciiNull( a.Username );
@@ -109,7 +109,7 @@ namespace Server.RemoteAdmin
 				m_Stream.Write( (byte)a.AccessLevel );
 				m_Stream.Write( a.Banned );
 				unchecked { m_Stream.Write( (uint)a.LastLogin.Ticks ); } // TODO: This doesn't work, uint.MaxValue is only 7 minutes of ticks. Fix protocol.
-				
+
 				m_Stream.Write( (ushort)a.LoginIPs.Length );
 				for (int i=0;i<a.LoginIPs.Length;i++)
 					m_Stream.WriteAsciiNull( a.LoginIPs[i].ToString() );
@@ -133,8 +133,7 @@ namespace Server.RemoteAdmin
 			m_Stream.Write( (uint)(DateTime.UtcNow - Clock.ServerStart).TotalSeconds );  // Age (seconds)
 
 			long memory = GC.GetTotalMemory( false );
-			m_Stream.Write( (uint)(memory >> 32) );                                   // Memory high bytes
-			m_Stream.Write( (uint)memory );                                           // Memory low bytes
+			m_Stream.Write( (ulong)memory );                                          // Memory
 		}
 	}
 
