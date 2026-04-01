@@ -1,0 +1,73 @@
+--- Scripts/Items/Skill Items/Magical/Misc/PotionKeg.cs
++++ Scripts/Items/Skill Items/Magical/Misc/PotionKeg.cs
+@@ -208,6 +208,70 @@
+			}
+		}
+
++		private class InternalTarget : Server.Targeting.Target
++		{
++			private PotionKeg m_Keg;
++
++			public InternalTarget( PotionKeg keg ) : base( 2, false, Server.Targeting.TargetFlags.None )
++			{
++				m_Keg = keg;
++			}
++
++			protected override void OnTarget( Mobile from, object targeted )
++			{
++				if ( m_Keg.Deleted || m_Keg.Held <= 0 )
++					return;
++
++				if ( targeted is Bottle )
++				{
++					if ( m_Keg.IsChildOf( from.Backpack ) || from.InRange( m_Keg.GetWorldLocation(), 2 ) )
++					{
++						Item item = (Item)targeted;
++
++						if ( item.IsChildOf( from.Backpack ) || from.InRange( item.GetWorldLocation(), 2 ) )
++						{
++							if ( item.Amount > 0 )
++							{
++								item.Consume( 1 );
++
++								from.SendLocalizedMessage( 502242 ); // You pour some of the keg's contents into an empty bottle...
++
++								BasePotion pot = m_Keg.FillBottle();
++
++								Container pack = from.Backpack;
++
++								if ( pack != null && pack.TryDropItem( from, pot, false ) )
++								{
++									from.SendLocalizedMessage( 502243 ); // ...and place it into your backpack.
++									from.PlaySound( 0x240 );
++
++									if ( --m_Keg.Held == 0 )
++										from.SendLocalizedMessage( 502245 ); // The keg is now empty.
++								}
++								else
++								{
++									from.SendLocalizedMessage( 502244 ); // ...but there is no room for the bottle in your backpack.
++									pot.Delete();
++								}
++							}
++						}
++						else
++						{
++							from.LocalOverheadMessage( Network.MessageType.Regular, 0x3B2, 1019045 ); // I can't reach that.
++						}
++					}
++					else
++					{
++						from.LocalOverheadMessage( Network.MessageType.Regular, 0x3B2, 1019045 ); // I can't reach that.
++					}
++				}
++				else
++				{
++					from.SendLocalizedMessage( 502232 ); // The keg is not designed to hold that type of object.
++				}
++			}
++		}
++
+		public override bool OnDragDrop( Mobile from, Item item )
+		{
+			if ( item is BasePotion )
