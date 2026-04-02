@@ -58,7 +58,7 @@ namespace Server.Mobiles
 
 				Add( new GenericBuyInfo( typeof( Hammer ), 17, 20, 0x102A, 0 ) );
 				Add( new GenericBuyInfo( typeof( SmithHammer ), 23, 20, 0x13E3, 0 ) );
-				// TODO: Sledgehammer
+				Add( new GenericBuyInfo( typeof( SledgeHammer ), 25, 20, 0xFB5, 0 ) );
 
 				Add( new GenericBuyInfo( typeof( Shovel ), 12, 20, 0xF39, 0 ) );
 
@@ -122,6 +122,7 @@ namespace Server.Mobiles
 				Add( typeof( Pickaxe ), 16 );
 				Add( typeof( Hammer ), 3 );
 				Add( typeof( SmithHammer ), 11 );
+				Add( typeof( SledgeHammer ), 12 );
 				Add( typeof( ButcherKnife ), 6 );
 			} 
 		} 
